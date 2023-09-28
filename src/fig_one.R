@@ -1,7 +1,7 @@
 # Maxine Cruz
 # tmcruz@arizona.edu
 # Created: 21 September 2023
-# Last modified: 26 September 2023
+# Last modified: 27 September 2023
 
 
 
@@ -78,14 +78,18 @@ spring_df$Season_Sampled <- "Spring"
 
 
 
-
 # ----- ORGANIZE DATA FRAME FOR FIGURE -----
+
+# UPDATE - Anything in "[]" was added to help in making Figure 4
 
 # Combine filtered fall and spring data into one data frame
 both_szn <- rbind(fall_df, spring_df)
 
 # Sort both_szn alphabetically by site, and then by Year
 both_szn <- both_szn[order(both_szn$Site, both_szn$Year), ]
+
+# [FOR FIGURE 4: Create separate version of both_szn data]
+both_szn_2 <- both_szn
 
 # GrandCanyonSouthRim, McDowellSonoranPreserve, and SabinoCanyonAZ have samples 
 # from fall and spring. We want to change their Season_Sampled column to
@@ -120,8 +124,8 @@ fig_df <- merge(fig_df, aggregate(Month ~ Site,
                                   data = both_szn, 
                                   FUN = length))
 
-# Note to self: The difference between line 113 and line 118 is that
-# 113 accounts for unique years, whereas 118 counts the number of year entries.
+# Note to self: The difference between line 121 and line 126 is that
+# 121 accounts for unique years, whereas 126 counts the number of year entries.
 # Since using Year twice might get confusing, Month was used since it
 # yielded the same results.
 
@@ -142,6 +146,19 @@ names(fig_df)[8] <- "Number_Times_Sampled"
 
 # Save data frame
 write_csv(fig_df, "data_mc/figure_1_data.csv")
+
+# [FOR FIGURE 4: Combine number assignment column to both_szn_2]
+both_szn_2 <- merge(both_szn_2, site_coords, all.y = TRUE)
+
+# [FOR FIGURE 4: Reorganize and select column order in data frame]
+both_szn_2 <- select(both_szn_2,
+                     9, 1, 5, 6, 7, 8)
+
+# [FOR FIGURE 4: Save data frame]
+write_csv(both_szn_2, "data_mc/site_season_sampledates.csv")
+
+
+
 
 # ----- GENERATE FIGURE 1 -----
 
