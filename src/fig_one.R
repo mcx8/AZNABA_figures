@@ -1,7 +1,7 @@
 # Maxine Cruz
 # tmcruz@arizona.edu
 # Created: 21 September 2023
-# Last modified: 27 September 2023
+# Last modified: 4 October 2023
 
 
 
@@ -25,7 +25,6 @@
 
 # ----- LOAD LIBRARIES -----
 
-library(leaflet)
 library(ggmap)
 library(ggplot2)
 library(usmap)
@@ -108,8 +107,21 @@ nums <- data.frame(Site_Number = cbind(seq(1, 13)))
 # Remove sites not used in study from site_coords
 site_coords <- site_coords[-c(12, 13, 14), ]
 
-# Reorganize site_coords alphabetically by site
-site_coords <- site_coords[order(site_coords$Site), ]
+# Reorganize site_coords by driest to wettest (Table 1)
+site_coords <- site_coords %>%
+  arrange(factor(Site, levels = c("Cottonwood",
+                                  "McDowellSonoranPreserve",
+                                  "GrandCanyonDesertView",
+                                  "GrandCanyonSouthRim",
+                                  "SycamoreCreekAZ",
+                                  "PatagoniaAZ",
+                                  "RamseyCanyonAZ",
+                                  "BoyceThompsonArboretum",
+                                  "GrandCanyonNorthRim",
+                                  "AtascosaHighlandsAZ",
+                                  "SabinoCanyonAZ",
+                                  "PortalAZ",
+                                  "SantaRitaMountains")))
 
 # Combine number assignment column to site_coords
 site_coords <- cbind(nums, site_coords)
@@ -144,6 +156,9 @@ fig_df <- select(fig_df,
 names(fig_df)[7] <- "Number_Years_Sampled"
 names(fig_df)[8] <- "Number_Times_Sampled"
 
+# Order by Site_Number for my own pleasure
+fig_df <- fig_df[order(fig_df$Site_Number), ]
+
 # Save data frame
 write_csv(fig_df, "data_mc/figure_1_data.csv")
 
@@ -153,6 +168,9 @@ both_szn_2 <- merge(both_szn_2, site_coords, all.y = TRUE)
 # [FOR FIGURE 4: Reorganize and select column order in data frame]
 both_szn_2 <- select(both_szn_2,
                      9, 1, 5, 6, 7, 8)
+
+# [FOR FIGURE 4: Order by Site_Number for my own pleasure]
+both_szn_2 <- both_szn_2[order(both_szn_2$Site_Number), ]
 
 # [FOR FIGURE 4: Save data frame]
 write_csv(both_szn_2, "data_mc/site_season_sampledates.csv")
@@ -182,6 +200,12 @@ az_stamen <- get_stamenmap(
 # Get state border lines
 az_lines <- map_data("state", "arizona")
 
+# Add coordinates for major cities (Flagstaff, Phoenix, and Tucson)
+# Coordinates determined by Google search
+az_cities <- data.frame(City = c("Flagstaff", "Phoenix", "Tucson"),
+                        Longitude = c(-111.651299, -112.074036, -110.911789),
+                        Latitude = c(35.198284, 33.448376, 32.253460))
+
 # Plot map
 fig_1 <- ggmap(az_stamen) +
   geom_point(data = fig_df,
@@ -190,6 +214,8 @@ fig_1 <- ggmap(az_stamen) +
              aes(x = Longitude, y = Latitude, 
                  shape = Season_Sampled),
              size = 5) + # Layers on different shapes depending on when each site was sampled
+  geom_point(data = az_cities,
+             aes(x = Longitude, y = Latitude)) + # Add points for major cities
   geom_polygon(data = az_lines,
                aes(x = long, y = lat, group = group),
                fill = NA,
@@ -200,6 +226,9 @@ fig_1 <- ggmap(az_stamen) +
             aes(x = Longitude, y = Latitude, label = Site_Number),
             color = "white",
             size = 2) + # Adds Site_Number on top of each site point
+  geom_text(data = az_cities,
+            aes(x = Longitude, y = Latitude, label = City),
+            hjust = 0, nudge_x = 0.05) + # Add city labels
   xlab("Longitude") +
   ylab("Latitude") +
   guides(shape = guide_legend(title = "Season Sampled")) + # Change legend title
@@ -261,6 +290,8 @@ fig_1 <- ggmap(az_stamen) +
 # ----- FIRST ATTEMPT MAPPING WITH LEAFLET THAT DID NOT WORK WELL -----
 
 # This is just here for my own records.
+
+# library(leaflet)
 
 # Add column to data for marker designation 
 # (Since we want a different one per season)
