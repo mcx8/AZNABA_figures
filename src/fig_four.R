@@ -35,7 +35,6 @@
 
 # ----- LOAD LIBRARIES -----
 
-library(cowplot)
 library(tidyverse)
 library(ggplot2)
 
@@ -53,7 +52,7 @@ bfly_df <- read.csv("data/Butterfly_Analysis.csv")
 
 
 
-# ----- 1ST ORGANIZATION OF DATA FRAME -----
+# ----- PRELIMINARY ORGANIZATION OF DATA FRAME -----
 
 # Combine the two data so bfly_df has Site_Number and Season_sampled
 
@@ -172,7 +171,7 @@ write.csv(bfly_responses_df, "data_mc/response_values.csv")
 
 # ----- MERGE PREDICTOR AND RESPONSE DATA FRAMES -----
 
-# Original data has 202 sample dates
+# Original data has 202 sample dates ~
   # 202 abundance + 202 richness = 404 response data
   # 202 tmax + 202 tmin + 202 monsoon + 202 winter = 808 predictor data
   # Each of the 404 response data will have 4 corresponding predictor data
@@ -181,10 +180,15 @@ write.csv(bfly_responses_df, "data_mc/response_values.csv")
 # ******* PROBLEM - NEW DF HAS 1712 RATHER THAN 1616 - MAYBE DUPLICATING DATES?
 
 # Merge data frames
-bfly_df2 <- merge(bfly_responses_df, bfly_predictors_df)
+bfly_df2 <- merge(bfly_responses_df, bfly_predictors_df, all = TRUE)
 
-
-
+# Order response data frame
+bfly_df2 <- bfly_df2[order(bfly_df2$Site_Number,
+                           bfly_df2$Year,
+                           bfly_df2$Month,
+                           bfly_df2$Day,
+                           bfly_df2$Response,
+                           bfly_df2$Predictor), ]
 
 # Save new data frame
 write.csv(bfly_df2, "data_mc/figure_4_data.csv")
@@ -192,6 +196,53 @@ write.csv(bfly_df2, "data_mc/figure_4_data.csv")
 
 
 
-# ----- 2ND ORGANIZATION OF DATA FRAME -----
+# ----- GENERATE FIGURE 4 -----
+
+# Generate new labels for predictors so they are more descriptive
+pred_labels <- c(
+  Monsoon = "Monsoon Precipitation",
+  Tmax = "30-day Maximum Temperature prior to Sampling Date",
+  Tmin = "30-day Minimum Temperature prior to Sampling Date",
+  Winter = "Winter Precipitation"
+)
+
+# Match labels with Predictor label in bfly_df2
+mods <- match(bfly_df2$Predictor, names(pred_labels))
+
+# Add column with new Predictor labels
+bfly_df2$Predictor2 <- pred_labels[mods]
+
+# Generate plot
+ggplot(bfly_df2, aes(x = Predictor_Value, y = Response_Value)) +
+  geom_point() +
+  geom_smooth(method = "lm", # Add regression line
+              color = "cornflowerblue",
+              fill = "lightskyblue") + 
+  facet_grid(rows = vars(Response), # Rows are separated by Response variables
+             cols = vars(Predictor2), # Columns are separated by Predictor variables
+             scales = "free", # Each panel can have a more appropriate scale
+             switch = "y", # Move y labels to left side
+             labeller = labeller(Predictor2 = label_wrap_gen(25))) + # Wrap label text
+  scale_y_continuous(position = "right") + # Move y-axis scale to right side
+  xlab("") + # Remove x-axis label
+  ylab("") + # Remove y-axis label
+  theme_minimal() + # General ggplot theme
+  theme(strip.text = element_text(face = "bold", # Modify x label
+                                    color = "black",
+                                    size = 10),
+        panel.border = element_rect(fill = "transparent", # Add border around each panel
+                                    color = "black",
+                                    linewidth = 1),
+        strip.background = element_rect(fill = "grey88",
+                                        linetype = "solid",
+                                        color = "black",
+                                        linewidth = 1))
+
+# Save ggplot
+
+# Saving using ggsave or whatever makes the plot look funky,
+  # so I'm just having it plot onto Plots and saving from there.
+
+
 
 

@@ -98,7 +98,7 @@ both_szn <- both_szn %>%
            ifelse(Site == "GrandCanyonSouthRim" |
                     Site == "McDowellSonoranPreserve" |
                     Site == "SabinoCanyonAZ", 
-                  "Fall/Spring", # If Site is named one of the above, then this
+                  "Fall / Spring", # If Site is named one of the above, then this
                   Season_Sampled)) # Otherwise, keep original season
 
 # Create column for assigning site numbers to sites_coords
@@ -136,9 +136,9 @@ fig_df <- merge(fig_df, aggregate(Month ~ Site,
                                   data = both_szn, 
                                   FUN = length))
 
-# Note to self: The difference between line 121 and line 126 is that
-# 121 accounts for unique years, whereas 126 counts the number of year entries.
-# Since using Year twice might get confusing, Month was used since it
+# Note to self: The difference between the two chunks above is the the former 
+# accounts for unique years, whereas the latter counts the number of year 
+# entries. Since using Year twice might get confusing, Month was used since it
 # yielded the same results.
 
 # Get Elevations and Season_Sampled of each site from both_szn
@@ -178,23 +178,132 @@ write_csv(both_szn_2, "data_mc/site_season_sampledates.csv")
 
 
 
-# ----- GENERATE FIGURE 1 -----
+# ----- GENERATE FIGURE 1 (ALTERNATE VERSION) -----
+
+# get_stamenmap has stopped working for some reason so here is the backup plan
+
+# Need to register Google API to retrieve a map
+# google_api <- "AIzaSyCizpWs57KwBxhIUf_MoS5RW9V1OZAhoKY"
+# register_google(google_api)
 
 # Get bounding box coordinates (from Google Maps)
-az_bb <- c(
-  left = -115.187847,
-  top = 37.271670,
-  bottom = 31.046601, 
-  right = -108.502422
-)
+az_bb <- c(left = -115.187847, 
+           bottom = 31.046601, 
+           right = -108.502422, 
+           top = 37.371670)
+
+# Retrieve map from Google
+basemap <- get_map(location = az_bb,
+                   maptype = "satellite",
+                   color = "bw")
+
+# Get state border lines
+az_lines <- map_data("state", "arizona")
+
+# Add coordinates for major cities (Flagstaff, Phoenix, and Tucson)
+# Coordinates determined by Google search
+az_cities <- data.frame(City = c("Flagstaff", "Phoenix", "Tucson"),
+                        Longitude = c(-111.651299, -112.074036, -110.911789),
+                        Latitude = c(35.198284, 33.448376, 32.253460))
+
+# Plot map
+# ggmap(basemap)
+ggplot() +
+  geom_point(data = fig_df,
+             aes(x = Longitude, y = Latitude, color = Site)) +
+  geom_polygon(data = az_lines,
+               aes(x = long, y = lat, group = group),
+               fill = NA,
+               color = "black",
+               linewidth = 1) + 
+  geom_point(data = az_cities,
+             aes(x = Longitude, y = Latitude),
+             size = 2) + 
+  geom_point(data = fig_df,
+             aes(x = Longitude, y = Latitude, 
+                 shape = Season_Sampled),
+             size = 6) + 
+  geom_text(data = fig_df,
+            aes(x = Longitude, y = Latitude, label = Site_Number),
+            color = "white",
+            size = 3) + 
+  geom_text(data = az_cities,
+             aes(x = Longitude, y = Latitude, label = City),
+             fontface = "bold",
+             vjust = 0,
+             nudge_y = -0.2,
+             size = 3.5) + 
+  xlab("Longitude") +
+  ylab("Latitude") +
+  scale_color_manual(
+    name = "Site",
+    breaks = c("Cottonwood",
+               "McDowellSonoranPreserve",
+               "GrandCanyonDesertView",
+               "GrandCanyonSouthRim",
+               "SycamoreCreekAZ",
+               "PatagoniaAZ",
+               "RamseyCanyonAZ",
+               "BoyceThompsonArboretum",
+               "GrandCanyonNorthRim",
+               "AtascosaHighlandsAZ",
+               "SabinoCanyonAZ",
+               "PortalAZ",
+               "SantaRitaMountains"),
+    values = c("Cottonwood" = "grey13", 
+               "McDowellSonoranPreserve" = "grey12",
+               "GrandCanyonDesertView" = "grey11", 
+               "GrandCanyonSouthRim" = "grey10",
+               "SycamoreCreekAZ" = "grey9", 
+               "PatagoniaAZ" = "grey8",
+               "RamseyCanyonAZ" = "grey7", 
+               "BoyceThompsonArboretum" = "grey6", 
+               "GrandCanyonNorthRim" = "grey5",
+               "AtascosaHighlandsAZ" = "grey4", 
+               "SabinoCanyonAZ" = "grey3",
+               "PortalAZ" = "grey2", 
+               "SantaRitaMountains" = "grey1"),
+    labels = c("1 - Cottonwood", 
+               "2 - McDowell Sonoran Preserve",
+               "3 - Grand Canyon Desert View", 
+               "4 - Grand Canyon South Rim",
+               "5 - Sycamore Creek", 
+               "6 - Patagonia",
+               "7 - Ramsey Canyon", 
+               "8 - Boyce Thompson Arboretum", 
+               "9 - Grand Canyon North Rim",
+               "10 - Atascosa Highlands", 
+               "11 - Sabino Canyon",
+               "12 - Portal", 
+               "13 - Santa Rita Mountains") 
+  ) +
+  guides(shape = guide_legend(title = "Season Sampled",
+                              override.aes = list(size = 4)),
+         color = guide_legend(title = "Site Name",
+                              override.aes = list(shape = NA,
+                                                  size = 3))) +
+  theme(axis.title.x = element_text(margin = margin(t = 10), size = 12),
+        axis.title.y = element_text(margin = margin(r = 10), size = 12)) +
+  theme_bw()
+
+# legend.key = element_rect(fill = NA)
+
+
+
+# ----- GENERATE FIGURE 1 (GET_STAMENMAP) -----
+
+# Get bounding box coordinates (from Google Maps)
+az_bb <- c(left = -115.187847, 
+           bottom = 31.046601, 
+           right = -108.502422, 
+           top = 37.471670)
 
 # Use bounding box to get map
 az_stamen <- get_stamenmap(
   bbox = az_bb,
-  zoom = 10,
+  zoom = 8,
   maptype = "terrain-background",
-  color = "bw",
-  force = TRUE
+  color = "bw"
 )
 
 # Get state border lines
@@ -207,9 +316,7 @@ az_cities <- data.frame(City = c("Flagstaff", "Phoenix", "Tucson"),
                         Latitude = c(35.198284, 33.448376, 32.253460))
 
 # Plot map
-fig_1 <- ggmap(az_stamen) +
-  geom_point(data = fig_df,
-             aes(x = Longitude, y = Latitude, color = Site)) + # Adds background points so we can have a legend for Site
+ggmap(az_stamen) +
   geom_point(data = fig_df,
              aes(x = Longitude, y = Latitude, 
                  shape = Season_Sampled),
@@ -232,51 +339,7 @@ fig_1 <- ggmap(az_stamen) +
   xlab("Longitude") +
   ylab("Latitude") +
   guides(shape = guide_legend(title = "Season Sampled")) + # Change legend title
-  scale_color_manual(
-    name = "Site",
-    breaks = c("AtascosaHighlandsAZ", 
-               "BoyceThompsonArboretum",
-               "Cottonwood", 
-               "GrandCanyonDesertView",
-               "GrandCanyonNorthRim", 
-               "GrandCanyonSouthRim",
-               "McDowellSonoranPreserve", 
-               "PatagoniaAZ", 
-               "PortalAZ",
-               "RamseyCanyonAZ", 
-               "SabinoCanyonAZ",
-               "SantaRitaMountains", 
-               "SycamoreCreekAZ"
-               ), # Generated legend names
-    values = c("AtascosaHighlandsAZ" = "grey13", 
-               "BoyceThompsonArboretum" = "grey12",
-               "Cottonwood" = "grey11", 
-               "GrandCanyonDesertView" = "grey10",
-               "GrandCanyonNorthRim" = "grey9", 
-               "GrandCanyonSouthRim" = "grey8",
-               "McDowellSonoranPreserve" = "grey7", 
-               "PatagoniaAZ" = "grey6", 
-               "PortalAZ" = "grey5",
-               "RamseyCanyonAZ" = "grey4", 
-               "SabinoCanyonAZ" = "grey3",
-               "SantaRitaMountains" = "grey2", 
-               "SycamoreCreekAZ" = "grey1"
-               ), # Make it look like they're all just bullet points
-    labels = c("1 - Atascosa Highlands", 
-               "2 - Boyce Thompson Arboretum",
-               "3 - Cottonwood", 
-               "4 - Grand Canyon Desert View",
-               "5 - Grand Canyon North Rim", 
-               "6 - Grand Canyon South Rim",
-               "7 - McDowell Sonoran Preserve", 
-               "8 - Patagonia", 
-               "9 - Portal",
-               "10 - Ramsey Canyon", 
-               "11 - Sabino Canyon",
-               "12 - Santa Rita Mountains", 
-               "13 - Sycamore Creek"
-               ) # Change legend names to these
-    ) + # Modify legend with Site names
+
   theme(axis.title.x = element_text(margin = margin(t = 10), size = 12),
         axis.title.y = element_text(margin = margin(r = 10), size = 12)
   ) # Modify alignment of axis titles so they're not so close to plot
@@ -286,6 +349,62 @@ fig_1 <- ggmap(az_stamen) +
 
 
 
+
+# ----- FORMER MODIFICATIONS TO MAP -----
+
+# This is just here in case I need it.
+
+# Site legend - problem was that we don't want the black dots
+geom_point(data = fig_df,
+           aes(x = Longitude, y = Latitude, color = Site)) + # Adds background points so we can have a legend for Site
+scale_color_manual(
+  name = "Site",
+  breaks = c("Cottonwood",
+             "McDowellSonoranPreserve",
+             "GrandCanyonDesertView",
+             "GrandCanyonSouthRim",
+             "SycamoreCreekAZ",
+             "PatagoniaAZ",
+             "RamseyCanyonAZ",
+             "BoyceThompsonArboretum",
+             "GrandCanyonNorthRim",
+             "AtascosaHighlandsAZ",
+             "SabinoCanyonAZ",
+             "PortalAZ",
+             "SantaRitaMountains"
+  ), # Generated legend names
+  values = c("Cottonwood" = "grey13", 
+             "McDowellSonoranPreserve" = "grey12",
+             "GrandCanyonDesertView" = "grey11", 
+             "GrandCanyonSouthRim" = "grey10",
+             "SycamoreCreekAZ" = "grey9", 
+             "PatagoniaAZ" = "grey8",
+             "RamseyCanyonAZ" = "grey7", 
+             "BoyceThompsonArboretum" = "grey6", 
+             "GrandCanyonNorthRim" = "grey5",
+             "AtascosaHighlandsAZ" = "grey4", 
+             "SabinoCanyonAZ" = "grey3",
+             "PortalAZ" = "grey2", 
+             "SantaRitaMountains" = "grey1"
+  ), # Make it look like they're all just bullet points
+  labels = c("1 - Cottonwood", 
+             "2 - McDowell Sonoran Preserve",
+             "3 - Grand Canyon Desert View", 
+             "4 - Grand Canyon South Rim",
+             "5 - Sycamore Creek", 
+             "6 - Patagonia",
+             "7 - Ramsey Canyon", 
+             "8 - Boyce Thompson Arboretum", 
+             "9 - Grand Canyon North Rim",
+             "10 - Atascosa Highlands", 
+             "11 - Sabino Canyon",
+             "12 - Portal", 
+             "13 - Santa Rita Mountains"
+  ) # Change legend names to these
+) + # Modify legend with Site names
+
+
+  
 
 # ----- FIRST ATTEMPT MAPPING WITH LEAFLET THAT DID NOT WORK WELL -----
 
