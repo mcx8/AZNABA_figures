@@ -1,7 +1,7 @@
 # Maxine Cruz
 # tmcruz@arizona.edu
 # Created: 21 September 2023
-# Last modified: 5 October 2023
+# Last modified: 17 October 2023
 
 
 
@@ -213,7 +213,9 @@ mods <- match(bfly_df2$Predictor, names(pred_labels))
 bfly_df2$Predictor2 <- pred_labels[mods]
 
 # Generate plot
-ggplot(bfly_df2, aes(x = Predictor_Value, y = Response_Value)) +
+ggplot(bfly_df2, aes(x = Predictor_Value, 
+                     y = Response_Value,
+                     color = Season_Sampled)) +
   geom_point() +
   geom_smooth(method = "lm", # Add regression line
               color = "cornflowerblue",
@@ -238,10 +240,47 @@ ggplot(bfly_df2, aes(x = Predictor_Value, y = Response_Value)) +
                                         color = "black",
                                         linewidth = 1))
 
-# Save ggplot
+# Save as shown in Plots
 
-# Saving using ggsave or whatever makes the plot look funky,
-  # so I'm just having it plot onto Plots and saving from there.
+
+
+
+# ----- GENERATE FIGURE 4 (VERSION 2: NESTED FACETS) -----
+
+# Extension to create nested facets
+library(ggh4x)
+
+# Generate figure again, but further facet into fall and spring samples
+ggplot(bfly_df2, aes(x = Predictor_Value, 
+                     y = Response_Value)) +
+  geom_point() +
+  geom_smooth(method = "lm",
+              color = "cornflowerblue",
+              fill = "lightskyblue") + 
+  facet_nested(Response + Season_Sampled ~ Predictor2,
+               scales = "free",
+               switch = "y", 
+               labeller = labeller(Predictor2 = label_wrap_gen(25))) +
+  scale_y_continuous(position = "right") + 
+  xlab("") + 
+  ylab("") + 
+  theme_minimal() +
+  theme(strip.text = element_text(face = "bold", 
+                                  color = "black",
+                                  size = 10),
+        panel.border = element_rect(fill = "transparent",
+                                    color = "black",
+                                    linewidth = 1),
+        strip.background = element_rect(fill = "grey88",
+                                        linetype = "solid",
+                                        color = "black",
+                                        linewidth = 1))
+
+# Save as shown on Plots
+rstudioapi::savePlotAsImage(file = "output/fig_4_attempt2.png", 
+                            format = "png",
+                            width = 921, 
+                            height = 610)
 
 
 
