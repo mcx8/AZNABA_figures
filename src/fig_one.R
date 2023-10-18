@@ -1,7 +1,7 @@
 # Maxine Cruz
 # tmcruz@arizona.edu
 # Created: 21 September 2023
-# Last modified: 4 October 2023
+# Last modified: 17 October 2023
 
 
 
@@ -29,6 +29,7 @@ library(ggmap)
 library(ggplot2)
 library(usmap)
 library(tidyverse)
+library(ggthemes)
 
 
 
@@ -178,7 +179,107 @@ write_csv(both_szn_2, "data_mc/site_season_sampledates.csv")
 
 
 
-# ----- GENERATE FIGURE 1 (ALTERNATE VERSION) -----
+# ----- GENERATE FIGURE 1 (ALTERNATE VERSION 2: JUST AZ POLYGON) -----
+
+# Get state border lines
+az_lines <- map_data("state", "arizona")
+
+# Add coordinates for major cities (Flagstaff, Phoenix, and Tucson)
+# Coordinates determined by Google search
+az_cities <- data.frame(City = c("Flagstaff", "Phoenix", "Tucson"),
+                        Longitude = c(-111.651299, -112.074036, -110.911789),
+                        Latitude = c(35.198284, 33.448376, 32.253460))
+
+# Plot map
+ggplot() +
+  geom_point(data = fig_df,
+             aes(x = Longitude, y = Latitude, color = Site)) +
+  geom_polygon(data = az_lines,
+               aes(x = long, y = lat, group = group),
+               fill = NA,
+               color = "black",
+               linewidth = 1) + 
+  geom_point(data = az_cities,
+             aes(x = Longitude, y = Latitude),
+             size = 2) + 
+  geom_point(data = fig_df,
+             aes(x = Longitude, y = Latitude, 
+                 shape = Season_Sampled),
+             size = 6) + 
+  geom_text(data = fig_df,
+            aes(x = Longitude, y = Latitude, label = Site_Number),
+            color = "white",
+            size = 3) + 
+  geom_text(data = az_cities,
+            aes(x = Longitude, y = Latitude, label = City),
+            fontface = "bold",
+            vjust = 0,
+            nudge_y = -0.2,
+            size = 3.5) + 
+  xlab("Longitude") +
+  ylab("Latitude") +
+  scale_color_manual(
+    name = "Site",
+    breaks = c("Cottonwood",
+               "McDowellSonoranPreserve",
+               "GrandCanyonDesertView",
+               "GrandCanyonSouthRim",
+               "SycamoreCreekAZ",
+               "PatagoniaAZ",
+               "RamseyCanyonAZ",
+               "BoyceThompsonArboretum",
+               "GrandCanyonNorthRim",
+               "AtascosaHighlandsAZ",
+               "SabinoCanyonAZ",
+               "PortalAZ",
+               "SantaRitaMountains"),
+    values = c("Cottonwood" = "grey13", 
+               "McDowellSonoranPreserve" = "grey12",
+               "GrandCanyonDesertView" = "grey11", 
+               "GrandCanyonSouthRim" = "grey10",
+               "SycamoreCreekAZ" = "grey9", 
+               "PatagoniaAZ" = "grey8",
+               "RamseyCanyonAZ" = "grey7", 
+               "BoyceThompsonArboretum" = "grey6", 
+               "GrandCanyonNorthRim" = "grey5",
+               "AtascosaHighlandsAZ" = "grey4", 
+               "SabinoCanyonAZ" = "grey3",
+               "PortalAZ" = "grey2", 
+               "SantaRitaMountains" = "grey1"),
+    labels = c("1 - Cottonwood", 
+               "2 - McDowell Sonoran Preserve",
+               "3 - Grand Canyon Desert View", 
+               "4 - Grand Canyon South Rim",
+               "5 - Sycamore Creek", 
+               "6 - Patagonia",
+               "7 - Ramsey Canyon", 
+               "8 - Boyce Thompson Arboretum", 
+               "9 - Grand Canyon North Rim",
+               "10 - Atascosa Highlands", 
+               "11 - Sabino Canyon",
+               "12 - Portal", 
+               "13 - Santa Rita Mountains") 
+  ) +
+  theme_pander() +
+  guides(shape = guide_legend(title = "Season Sampled",
+                              override.aes = list(size = 4)),
+         color = guide_legend(title = "Site Name",
+                              override.aes = list(shape = NA,
+                                                  size = 3))) +
+  theme(axis.title.x = element_text(margin = margin(t = 10), size = 12),
+        axis.title.y = element_text(margin = margin(r = 10), size = 12),
+        legend.position = "right") 
+
+# Save as shown on Plots
+rstudioapi::savePlotAsImage(file = "output/fig_1_attempt4.png", 
+                            format = "png",
+                            width = 786, 
+                            height = 609)
+
+
+
+
+# ----- GENERATE FIGURE 1 (ALTERNATE VERSION: GOOGLE MAP) -----
 
 # get_stamenmap has stopped working for some reason so here is the backup plan
 
@@ -207,8 +308,7 @@ az_cities <- data.frame(City = c("Flagstaff", "Phoenix", "Tucson"),
                         Latitude = c(35.198284, 33.448376, 32.253460))
 
 # Plot map
-# ggmap(basemap)
-ggplot() +
+ggmap(basemap) +
   geom_point(data = fig_df,
              aes(x = Longitude, y = Latitude, color = Site)) +
   geom_polygon(data = az_lines,
@@ -287,6 +387,7 @@ ggplot() +
   theme_bw()
 
 # legend.key = element_rect(fill = NA)
+
 
 
 
