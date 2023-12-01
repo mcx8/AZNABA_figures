@@ -1,7 +1,7 @@
 # Maxine Cruz
 # tmcruz@arizona.edu
 # Created: 21 September 2023
-# Last modified: 17 October 2023
+# Last modified: 16 November 2023
 
 
 
@@ -30,6 +30,17 @@ library(ggplot2)
 library(usmap)
 library(tidyverse)
 library(ggthemes)
+library(cowplot)
+
+# Using archived packages
+
+# 1) ggsn (adds symbols and scale bars to ggplot)
+
+# install.packages("https://cran.r-project.org/src/contrib/Archive/ggsn/ggsn_0.5.0.tar.gz", 
+#                  type = "source", 
+#                  repos = NULL)
+
+library(ggsn)
 
 
 
@@ -37,13 +48,13 @@ library(ggthemes)
 # ----- LOAD DATA -----
 
 # Coordinates and names of sample sites
-site_coords <- read.csv("data/lat-long-site.csv")
+site_coords <- read.csv("data/sites_lat_long.csv")
 
 # For filtering spring sample sites
-spring_data <- read.csv("data/Spring_Analysis.csv")
+spring_data <- read.csv("data/butterfly_analysis_spring.csv")
 
 # For filtering fall sample sites
-fall_data <- read.csv("data/Fall_Analysis.csv")
+fall_data <- read.csv("data/butterfly_analysis_fall.csv")
 
 
 
@@ -161,7 +172,7 @@ names(fig_df)[8] <- "Number_Times_Sampled"
 fig_df <- fig_df[order(fig_df$Site_Number), ]
 
 # Save data frame
-write_csv(fig_df, "data_mc/figure_1_data.csv")
+write_csv(fig_df, "data/figure_generation/figure_1_data.csv")
 
 # [FOR FIGURE 4: Combine number assignment column to both_szn_2]
 both_szn_2 <- merge(both_szn_2, site_coords, all.y = TRUE)
@@ -174,7 +185,155 @@ both_szn_2 <- select(both_szn_2,
 both_szn_2 <- both_szn_2[order(both_szn_2$Site_Number), ]
 
 # [FOR FIGURE 4: Save data frame]
-write_csv(both_szn_2, "data_mc/site_season_sampledates.csv")
+write_csv(both_szn_2, "data/figure_generation/site_season_sampledates.csv")
+
+
+
+# ----- GENERATE FIGURE 1 (ALTERNATE VERSION 3: AZ POLYGON + US MAP) -----
+
+# Use data frame created for making Figure 1
+fig_df <- read.csv("data/figure_generation/figure_1_data.csv")
+
+# Get state border lines
+all_state <- map_data("state")
+
+# Get Arizona border lines
+az_lines <- filter(all_state, region == "arizona")
+
+# Add coordinates for major cities (Flagstaff, Phoenix, and Tucson)
+# Coordinates determined by Google search
+az_cities <- data.frame(City = c("Flagstaff", "Phoenix", "Tucson"),
+                        Longitude = c(-111.651299, -112.074036, -110.911789),
+                        Latitude = c(35.198284, 33.448376, 32.253460))
+
+# Plot US map with Arizona highlighted
+us_map <- ggplot(all_state, aes(x = long, y = lat, group = group)) +
+  geom_polygon(fill = "white", 
+               color = "black") +
+  geom_polygon(fill = "cornflowerblue", 
+               color = "black",
+               data = az_lines) +
+  xlab("Longitude") +
+  ylab("Latitude") +
+  theme(axis.title.x = element_text(margin = margin(t = 10), size = 12),
+        axis.title.y = element_text(margin = margin(r = 10), size = 12)) +
+  scalebar(data = all_state,
+           location = "bottomright",
+           dist = 500,
+           dist_unit = "km",
+           transform = TRUE,
+           model = "WGS84",
+           st.size = 3,
+           border.size = 0.5)
+
+# Save as shown on Plots
+rstudioapi::savePlotAsImage(file = "output/fig_1_us_map.png", 
+                            format = "png",
+                            width = 800, 
+                            height = 546)
+
+# Plot Arizona map
+az_map <- ggplot() +
+  geom_point(data = fig_df,
+             aes(x = Longitude, y = Latitude, color = Site)) +
+  geom_polygon(data = az_lines,
+               aes(x = long, y = lat, group = group),
+               fill = "white",
+               color = "black",
+               linewidth = 0.5) + 
+  geom_point(data = az_cities,
+             aes(x = Longitude, y = Latitude),
+             size = 2) + 
+  geom_point(data = fig_df,
+             aes(x = Longitude, y = Latitude, 
+                 shape = Season_Sampled),
+             size = 6) + 
+  geom_text(data = fig_df,
+            aes(x = Longitude, y = Latitude, label = Site_Number),
+            color = "white",
+            size = 3) + 
+  geom_text(data = az_cities,
+            aes(x = Longitude, y = Latitude, label = City),
+            vjust = 0,
+            nudge_y = -0.2,
+            size = 3.5) + 
+  xlab("") +
+  ylab("") +
+  scale_color_manual(
+    name = "Site",
+    breaks = c("Cottonwood",
+               "McDowellSonoranPreserve",
+               "GrandCanyonDesertView",
+               "GrandCanyonSouthRim",
+               "SycamoreCreekAZ",
+               "PatagoniaAZ",
+               "RamseyCanyonAZ",
+               "BoyceThompsonArboretum",
+               "GrandCanyonNorthRim",
+               "AtascosaHighlandsAZ",
+               "SabinoCanyonAZ",
+               "PortalAZ",
+               "SantaRitaMountains"),
+    values = c("Cottonwood" = "grey13", 
+               "McDowellSonoranPreserve" = "grey12",
+               "GrandCanyonDesertView" = "grey11", 
+               "GrandCanyonSouthRim" = "grey10",
+               "SycamoreCreekAZ" = "grey9", 
+               "PatagoniaAZ" = "grey8",
+               "RamseyCanyonAZ" = "grey7", 
+               "BoyceThompsonArboretum" = "grey6", 
+               "GrandCanyonNorthRim" = "grey5",
+               "AtascosaHighlandsAZ" = "grey4", 
+               "SabinoCanyonAZ" = "grey3",
+               "PortalAZ" = "grey2", 
+               "SantaRitaMountains" = "grey1"),
+    labels = c("1 - Cottonwood", 
+               "2 - McDowell Sonoran Preserve",
+               "3 - Grand Canyon Desert View", 
+               "4 - Grand Canyon South Rim",
+               "5 - Sycamore Creek", 
+               "6 - Patagonia",
+               "7 - Ramsey Canyon", 
+               "8 - Boyce Thompson Arboretum", 
+               "9 - Grand Canyon North Rim",
+               "10 - Atascosa Highlands", 
+               "11 - Sabino Canyon",
+               "12 - Portal", 
+               "13 - Santa Rita Mountains") 
+  ) +
+  guides(shape = guide_legend(title = "Season Sampled",
+                              override.aes = list(size = 4)),
+         color = guide_legend(title = "Site Name",
+                              override.aes = list(shape = NA,
+                                                  size = 3))) +
+  theme(axis.title.x = element_text(margin = margin(t = 10), size = 12),
+        axis.title.y = element_text(margin = margin(r = 10), size = 12),
+        legend.position = "right",
+        legend.key = element_rect(fill = "transparent", color = "transparent"),
+        legend.title = element_text(face = "bold")) +
+  scalebar(data = az_lines,
+           location = "bottomleft",
+           dist = 100,
+           dist_unit = "km",
+           transform = TRUE,
+           model = "WGS84",
+           st.size = 3,
+           border.size = 0.5)
+
+# Save as shown on Plots
+rstudioapi::savePlotAsImage(file = "output/fig_1_attempt5.png", 
+                            format = "png",
+                            width = 716, 
+                            height = 546)
+
+# Combine US and AZ maps
+plot_row <- cowplot::plot_grid(us_map, az_map)
+
+# Save as shown on Plots
+rstudioapi::savePlotAsImage(file = "output/fig_1_us_az_map.png", 
+                            format = "png",
+                            width = 1320,
+                            height = 520)
 
 
 
